@@ -2,6 +2,11 @@ node_modules/
 dist/
 coverage/
 .env
-storage/reports/*.pdf
-storage/reports/*.tmp.pdf
+.env.*
+!.env.example
+storage/
 tmp/
+*.pdf
+*.xlsx
+*.tsbuildinfo
+log.json

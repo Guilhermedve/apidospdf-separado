@@ -48,17 +48,17 @@ describe('ReportDocumentService', () => {
         daily: expect.any(Array),
       }),
     );
-    expect(html).toContain('entre rios');
+    expect(html).toContain('fazenda exemplo');
     expect(html).toContain('3 dias');
     expect(html).not.toContain('undefined');
     expect(html).not.toContain('NaN');
   });
 
-  it('preenche o modelo antigo com os campos do contrato real do log.json', () => {
+  it('preenche o modelo antigo com os campos do contrato sintetico', () => {
     const html = createService().render(document, ['042']);
     const [device] = extractDevices(html);
 
-    expect(html).toContain('entre rios');
+    expect(html).toContain('fazenda exemplo');
     expect(html).toContain('3 dias');
     expect(html).toContain('DIR 042');
     expect(html).toContain('Sensor analogico');

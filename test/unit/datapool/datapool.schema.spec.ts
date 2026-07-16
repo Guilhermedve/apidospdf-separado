@@ -16,12 +16,12 @@ function cloneFixture(): any {
 }
 
 describe('parseDatapoolPeriodDocument', () => {
-  it('aceita a fixture real de 3d', () => {
+  it('aceita a fixture sintetica de 3d', () => {
     const parsed = parseDatapoolPeriodDocument(fixture);
 
     expect(parsed.period).toBe('3d');
     expect(Object.keys(parsed.devices)).toHaveLength(42);
-    expect(parsed.summary.totalRows).toBe(10_798);
+    expect(parsed.summary.totalRows).toBe(84);
   });
 
   it('rejeita chave de mapa diferente do addr normalizado', () => {

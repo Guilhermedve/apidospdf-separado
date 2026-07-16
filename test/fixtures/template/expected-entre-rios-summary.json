@@ -1,10 +1,10 @@
 {
   "totalDevices": 42,
-  "healthyDevices": 5,
-  "attentionDevices": 22,
+  "healthyDevices": 42,
+  "attentionDevices": 0,
   "criticalDevices": 0,
-  "noDataDevices": 15,
-  "overallHealth": 59.3,
+  "noDataDevices": 0,
+  "overallHealth": 100,
   "automationDevices": 0,
   "sensingDevices": 42
 }

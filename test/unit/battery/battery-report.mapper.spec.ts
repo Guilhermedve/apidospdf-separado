@@ -46,7 +46,7 @@ describe('BatteryReportMapper', () => {
     const mapped = mapper.map(document, [document.devices['045']]);
 
     expect(mapped).toMatchObject({
-      farm: 'entre rios',
+      farm: 'fazenda exemplo',
       period: '3d',
       generatedAt: '2026-07-10T13:00:24.526Z',
       windowStart: '2026-07-07T13:00:00.000Z',

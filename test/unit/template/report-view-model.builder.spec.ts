@@ -41,7 +41,7 @@ const expectedSummary = JSON.parse(
 describe('ReportViewModelBuilder', () => {
   const builder = new ReportViewModelBuilder();
 
-  it('produz o resumo homologado para a fixture real', () => {
+  it('produz o resumo homologado para a fixture sintetica', () => {
     const view = builder.build(reportData);
 
     expect(view.summary).toEqual(expectedSummary);
