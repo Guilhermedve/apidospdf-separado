@@ -1,0 +1,41 @@
+{
+  "name": "battery-pdf-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API assíncrona para geração de relatórios PDF de bateria",
+  "scripts": {
+    "build": "nest build",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:worker": "node dist/worker.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:integration": "jest --config test/jest-integration.json",
+    "test:e2e": "jest --config test/jest-e2e.json"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.28",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.1.28",
+    "@nestjs/platform-express": "^11.1.28",
+    "bullmq": "^5.58.5",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "exceljs": "^4.4.0",
+    "ioredis": "^5.7.0",
+    "puppeteer": "^25.3.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.24",
+    "@nestjs/schematics": "^11.1.0",
+    "@nestjs/testing": "^11.1.28",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^26.1.1",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.11",
+    "typescript": "^6.0.3"
+  }
+}
