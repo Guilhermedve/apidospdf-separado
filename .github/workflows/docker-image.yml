@@ -1,0 +1,49 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+- name: Auto Release (by PSModule)
+  # You may pin to the exact commit or the version.
+  # uses: PSModule/Release-GHRepository@fa6ac2f6fefd044e80d60f5cfcfe8dd3bd3cb670
+  uses: PSModule/Release-GHRepository@v1.7.14
+  with:
+    # Control wether to automatically delete the prerelease tags after the stable release is created.
+    AutoCleanup: # optional, default is true
+    # Control wether to automatically handle patches. If disabled, the action will only create a patch release if the pull request has a 'patch' label.
+    AutoPatching: # optional, default is true
+    # The path to the configuration file. Settings in the configuration file take precedence over the action inputs.
+    ConfigurationFile: # optional, default is .github\auto-release.yml
+    # Control wether to create a major tag when a pull request is merged into the main branch.
+    CreateMajorTag: # optional, default is true
+    # Control wether to create a minor tag when a pull request is merged into the main branch.
+    CreateMinorTag: # optional, default is true
+    # If specified, uses a date based prerelease scheme. The format should be a valid .NET format string like 'yyyyMMddHHmm'.
+    DatePrereleaseFormat: # optional, default is 
+    # A comma separated list of labels that do not trigger a release.
+    IgnoreLabels: # optional, default is NoRelease
+    # Control wether to automatically increment the prerelease number. If disabled, the action will ensure only one prerelease exists for a given branch.
+    IncrementalPrerelease: # optional, default is true
+    # A comma separated list of labels that trigger a major release.
+    MajorLabels: # optional, default is major, breaking
+    # A comma separated list of labels that trigger a minor release.
+    MinorLabels: # optional, default is minor, feature, improvement
+    # A comma separated list of labels that trigger a patch release.
+    PatchLabels: # optional, default is patch, fix, bug
+    # The prefix to use for the version number.
+    VersionPrefix: # optional, default is v
+    # If specified, the action will only log the changes it would make, but will not actually create or delete any releases or tags.
+    WhatIf: # optional, default is false
