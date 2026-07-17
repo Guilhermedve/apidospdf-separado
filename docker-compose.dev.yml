@@ -1,0 +1,11 @@
+# Override de desenvolvimento: builda a imagem localmente em vez de puxar do GHCR.
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+# Este arquivo NÃO é carregado automaticamente pelo deploy na Pi, que usa apenas
+# docker-compose.yml (imagem publicada pelo CI).
+services:
+  pdf-api:
+    build: .
+
+  pdf-worker:
+    build: .

@@ -46,12 +46,14 @@ jobs:
             type=raw,value=latest,enable=${{ github.event_name != 'pull_request' }}
             type=sha
 
-      - name: Build and publish ARM64 image
+      - name: Build and publish image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/arm64
+          # PRs validam o build em amd64 nativo (rápido); push na main publica
+          # a imagem ARM64 para a Raspberry Pi via QEMU.
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/arm64' }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
