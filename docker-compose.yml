@@ -2,6 +2,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis-data:/data
@@ -15,6 +17,8 @@ services:
     image: ghcr.io/guilhermedve/apidospdf-separado:latest
     build: .
     restart: unless-stopped
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     env_file: .env
     command: ["node", "dist/main.js"]
     ports:
@@ -41,6 +45,8 @@ services:
     image: ghcr.io/guilhermedve/apidospdf-separado:latest
     build: .
     restart: unless-stopped
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
     env_file: .env
     command: ["node", "dist/worker.js"]
     extra_hosts:
@@ -50,6 +56,39 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"const Redis=require('ioredis');const r=new Redis(process.env.REDIS_URL,{lazyConnect:true,connectTimeout:3000,maxRetriesPerRequest:0});r.connect().then(()=>r.ping()).then(v=>process.exit(v==='PONG'?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    restart: unless-stopped
+    environment:
+      TZ: America/Fortaleza
+      DOCKER_API_VERSION: ${DOCKER_API_VERSION:-1.40}
+      WATCHTOWER_LABEL_ENABLE: "true"
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_ROLLING_RESTART: "true"
+      WATCHTOWER_POLL_INTERVAL: ${WATCHTOWER_POLL_INTERVAL:-300}
+      REPO_USER: ${WATCHTOWER_REPO_USER:-}
+      REPO_PASS: ${WATCHTOWER_REPO_PASS:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "/watchtower", "--health-check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      com.centurylinklabs.watchtower.enable: "false"
 
 volumes:
   redis-data:
