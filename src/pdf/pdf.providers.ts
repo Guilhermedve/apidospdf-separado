@@ -11,7 +11,18 @@ export class PuppeteerPdfBrowserLauncher implements PdfBrowserLauncher {
   async launch(): Promise<PdfBrowser> {
     const { default: puppeteer } = await import('puppeteer');
     return (await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        // /dev/shm é pequeno em containers; sem isso o Chromium pode travar.
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-extensions',
+        '--no-first-run',
+        '--no-default-browser-check',
+        '--mute-audio',
+        '--hide-scrollbars',
+      ],
       headless: true,
     })) as unknown as PdfBrowser;
   }

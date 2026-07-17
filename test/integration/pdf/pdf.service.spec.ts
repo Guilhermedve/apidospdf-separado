@@ -38,8 +38,9 @@ describe('PdfService', () => {
       fileName: '42.pdf',
       generatedAt: now.toISOString(),
     });
-    expect(launcher.page.receivedHtml).toBe('<html>ok</html>');
-    expect(launcher.page.renderOptions).toMatchObject({
+    const page = launcher.pages[0];
+    expect(page.receivedHtml).toBe('<html>ok</html>');
+    expect(page.renderOptions).toMatchObject({
       format: 'A4',
       landscape: true,
       printBackground: true,
@@ -47,8 +48,22 @@ describe('PdfService', () => {
     await expect(
       readFile(storage.finalPath('42'), 'utf8'),
     ).resolves.toBe('%PDF-fake');
-    expect(launcher.closed).toBe(true);
-    expect(launcher.page.closed).toBe(true);
+    expect(page.closed).toBe(true);
+    // O browser fica residente para os próximos jobs.
+    expect(launcher.closed).toBe(false);
+  });
+
+  it('reutiliza o mesmo browser entre gerações', async () => {
+    const launcher = new FakeLauncher();
+    const service = new PdfService(launcher, storage);
+
+    await service.generate('1', '<html>a</html>');
+    await service.generate('2', '<html>b</html>');
+
+    expect(launcher.launchCount).toBe(1);
+    expect(launcher.pages).toHaveLength(2);
+    expect(launcher.pages.every((page) => page.closed)).toBe(true);
+    expect(launcher.closed).toBe(false);
   });
 
   it('remove o temporário e lança PDF_GENERATION_FAILED quando a impressão falha', async () => {
@@ -67,6 +82,32 @@ describe('PdfService', () => {
     await expect(stat(storage.finalPath('7'))).rejects.toMatchObject({
       code: 'ENOENT',
     });
+    // Falha de impressão descarta o browser para o próximo job relançar.
+    expect(launcher.closed).toBe(true);
+  });
+
+  it('relança o browser no job seguinte a uma falha de impressão', async () => {
+    const launcher = new FakeLauncher({ failOnPdf: true });
+    const service = new PdfService(launcher, storage);
+
+    await expect(service.generate('7', '<html/>')).rejects.toMatchObject({
+      code: 'PDF_GENERATION_FAILED',
+    });
+    launcher.failOnPdf = false;
+
+    await expect(service.generate('8', '<html>ok</html>')).resolves.toMatchObject(
+      { fileName: '8.pdf' },
+    );
+    expect(launcher.launchCount).toBe(2);
+  });
+
+  it('fecha o browser residente no shutdown do módulo', async () => {
+    const launcher = new FakeLauncher();
+    const service = new PdfService(launcher, storage);
+
+    await service.generate('42', '<html>ok</html>');
+    await service.onModuleDestroy();
+
     expect(launcher.closed).toBe(true);
   });
 });
@@ -76,7 +117,7 @@ class FakePage implements PdfPage {
   renderOptions?: PdfRenderOptions;
   closed = false;
 
-  constructor(private readonly failOnPdf: boolean) {}
+  constructor(private readonly launcher: FakeLauncher) {}
 
   async setContent(html: string): Promise<void> {
     this.receivedHtml = html;
@@ -84,7 +125,7 @@ class FakePage implements PdfPage {
 
   async pdf(options: PdfRenderOptions): Promise<void> {
     this.renderOptions = options;
-    if (this.failOnPdf) {
+    if (this.launcher.failOnPdf) {
       throw new Error('boom');
     }
     await writeFile(options.path, '%PDF-fake');
@@ -96,17 +137,24 @@ class FakePage implements PdfPage {
 }
 
 class FakeLauncher implements PdfBrowserLauncher {
-  readonly page: FakePage;
+  readonly pages: FakePage[] = [];
+  launchCount = 0;
   closed = false;
+  failOnPdf: boolean;
 
   constructor(options: { failOnPdf?: boolean } = {}) {
-    this.page = new FakePage(options.failOnPdf ?? false);
+    this.failOnPdf = options.failOnPdf ?? false;
   }
 
   async launch(): Promise<PdfBrowser> {
-    const page = this.page;
+    this.launchCount += 1;
+    this.closed = false;
     return {
-      newPage: async () => page,
+      newPage: async () => {
+        const page = new FakePage(this);
+        this.pages.push(page);
+        return page;
+      },
       close: async () => {
         this.closed = true;
       },
