@@ -10,9 +10,13 @@ RUN npm run build && npm prune --omit=dev
 
 FROM node:22-bookworm-slim AS runtime
 
+ARG VCS_REF=unknown
+
 ENV NODE_ENV=production \
     PUPPETEER_SKIP_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+LABEL org.opencontainers.image.revision=$VCS_REF
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends chromium ca-certificates fonts-liberation \
