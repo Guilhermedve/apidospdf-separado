@@ -5,15 +5,39 @@ const isoTimestampSchema = z.string().datetime({ offset: true });
 const actuatorRowSchema = z
   .object({
     TIME: isoTimestampSchema,
-    ADDR: z.number().int(),
-    NOTE: z.string(),
+    FLOW: z.number(),
+    VOL: z.number(),
+    NOTE: z.string().nullable(),
   })
   .strict();
 
-const actuatorTablesSchema = z.record(
+const actuatorTableMapSchema = z.record(
   z.string().trim().min(1),
   z.array(actuatorRowSchema),
 );
+
+const actuatorSectorSchema = z
+  .object({
+    tables: actuatorTableMapSchema,
+  })
+  .strict();
+
+const actuatorSummarySchema = z
+  .object({
+    tables: z.number().int().nonnegative(),
+    rows: z.number().int().nonnegative(),
+    totalTables: z.number().int().nonnegative(),
+    tablesWithMatches: z.number().int().nonnegative(),
+    totalRows: z.number().int().nonnegative(),
+  })
+  .strict();
+
+const actuatorErrorSchema = z
+  .object({
+    table: z.string().trim().min(1),
+    message: z.string().trim().min(1),
+  })
+  .strict();
 
 const actuatorCacheDocumentSchema = z
   .object({
@@ -22,20 +46,9 @@ const actuatorCacheDocumentSchema = z
     generatedAt: isoTimestampSchema,
     windowStart: isoTimestampSchema,
     windowEnd: isoTimestampSchema,
-    filter: z
-      .object({
-        column: z.string().trim().min(1),
-        contains: z.string(),
-      })
-      .strict(),
-    summary: z
-      .object({
-        totalTables: z.number().int().nonnegative(),
-        tablesWithMatches: z.number().int().nonnegative(),
-        totalRows: z.number().int().nonnegative(),
-      })
-      .strict(),
-    tables: actuatorTablesSchema,
+    summary: actuatorSummarySchema,
+    sectors: z.record(z.string().trim().min(1), actuatorSectorSchema),
+    errors: z.array(actuatorErrorSchema).optional(),
   })
   .strict()
   .superRefine((document, context) => {
@@ -47,25 +60,48 @@ const actuatorCacheDocumentSchema = z
       });
     }
 
-    const tables = Object.values(document.tables);
-    if (document.summary.tablesWithMatches !== tables.length) {
+    const tableEntries = Object.values(document.sectors).flatMap((sector) =>
+      Object.entries(sector.tables),
+    );
+    const tableCount = tableEntries.length;
+    const nonEmptyTableCount = tableEntries.filter(
+      ([, rows]) => rows.length > 0,
+    ).length;
+    const rowCount = tableEntries.reduce((sum, [, rows]) => sum + rows.length, 0);
+
+    if (document.summary.tables !== tableCount) {
       context.addIssue({
         code: 'custom',
-        message: 'summary.tablesWithMatches must match returned tables',
+        message: 'summary.tables must match returned tables',
+        path: ['summary', 'tables'],
+      });
+    }
+
+    if (document.summary.tablesWithMatches !== nonEmptyTableCount) {
+      context.addIssue({
+        code: 'custom',
+        message: 'summary.tablesWithMatches must match non-empty tables',
         path: ['summary', 'tablesWithMatches'],
       });
     }
 
-    if (document.summary.totalTables < document.summary.tablesWithMatches) {
+    if (document.summary.totalTables !== tableCount) {
       context.addIssue({
         code: 'custom',
-        message: 'summary.totalTables cannot be lower than matched tables',
+        message: 'summary.totalTables must match returned tables',
         path: ['summary', 'totalTables'],
       });
     }
 
-    const totalRows = tables.reduce((sum, rows) => sum + rows.length, 0);
-    if (document.summary.totalRows !== totalRows) {
+    if (document.summary.rows !== rowCount) {
+      context.addIssue({
+        code: 'custom',
+        message: 'summary.rows must match returned rows',
+        path: ['summary', 'rows'],
+      });
+    }
+
+    if (document.summary.totalRows !== rowCount) {
       context.addIssue({
         code: 'custom',
         message: 'summary.totalRows must match returned rows',
@@ -86,7 +122,8 @@ export function parseActuatorCacheDocument(input: unknown): ActuatorCacheDocumen
 }
 
 export type ActuatorRow = z.infer<typeof actuatorRowSchema>;
-export type ActuatorTableMap = z.infer<typeof actuatorTablesSchema>;
+export type ActuatorTableMap = z.infer<typeof actuatorTableMapSchema>;
+export type ActuatorSector = z.infer<typeof actuatorSectorSchema>;
 export type ActuatorCacheDocument = z.infer<
   typeof actuatorCacheDocumentSchema
 >;
