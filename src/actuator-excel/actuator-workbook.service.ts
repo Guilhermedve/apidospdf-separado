@@ -4,7 +4,6 @@ import ExcelJS from 'exceljs';
 import { ApplicationError } from '../common/errors/application-error';
 import type { ActuatorCacheDocument } from './actuator-cache.schema';
 import type { ActuatorWorkbookResult } from './actuator-excel.types';
-import { parseActuatorNote } from './actuator-note.parser';
 
 export const MAX_EXCEL_DATA_ROWS = 1_048_575;
 
@@ -32,25 +31,21 @@ export class ActuatorWorkbookService {
         views: [{ state: 'frozen', ySplit: 1 }],
       });
       worksheet.columns = [
-        { key: 'area', width: 24 },
+        { key: 'sector', width: 30 },
+        { key: 'actuator', width: 32 },
         { key: 'time', width: 22, style: { numFmt: 'dd/mm/yyyy hh:mm:ss' } },
-        { key: 'addr', width: 9 },
-        { key: 'fir', width: 9 },
-        { key: 'product', width: 28 },
-        { key: 'injectedLiters', width: 16 },
-        { key: 'programmedLiters', width: 18 },
+        { key: 'flow', width: 14 },
+        { key: 'volume', width: 14 },
         { key: 'note', width: 52 },
       ];
-      worksheet.autoFilter = 'A1:H1';
+      worksheet.autoFilter = 'A1:F1';
 
       const header = worksheet.addRow([
-        'ÁREA',
+        'SETOR',
+        'ATUADOR',
         'DATA/HORA',
-        'ADDR',
-        'FIR',
-        'PRODUTO',
-        'INJETADO (L)',
-        'PROGRAMADO (L)',
+        'VAZÃO',
+        'VOLUME',
         'NOTA',
       ]);
       header.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -72,41 +67,46 @@ export class ActuatorWorkbookService {
       header.commit();
 
       const collator = new Intl.Collator('pt-BR', { numeric: true });
-      const actuatorNames = Object.keys(document.tables).sort((left, right) =>
+      const sectorNames = Object.keys(document.sectors).sort((left, right) =>
         collator.compare(left, right),
       );
       let rows = 0;
 
-      for (const actuator of actuatorNames) {
-        const actuatorRows = [...document.tables[actuator]].sort(
-          (left, right) => Date.parse(left.TIME) - Date.parse(right.TIME),
+      for (const sector of sectorNames) {
+        const tables = document.sectors[sector].tables;
+        const actuatorNames = Object.keys(tables).sort((left, right) =>
+          collator.compare(left, right),
         );
-        for (const row of actuatorRows) {
-          const parsed = parseActuatorNote(String(row.NOTE));
-          const worksheetRow = worksheet.addRow([
-            actuator,
-            new Date(row.TIME),
-            row.ADDR,
-            parsed.fir,
-            parsed.product,
-            parsed.injectedLiters,
-            parsed.programmedLiters,
-            parsed.note,
-          ]);
-          worksheetRow.eachCell({ includeEmpty: true }, (cell, column) => {
-            cell.border = {
-              top: { style: 'thin', color: { argb: 'FFD9E2F3' } },
-              left: { style: 'thin', color: { argb: 'FFD9E2F3' } },
-              bottom: { style: 'thin', color: { argb: 'FFD9E2F3' } },
-              right: { style: 'thin', color: { argb: 'FFD9E2F3' } },
-            };
-            cell.alignment = {
-              vertical: 'middle',
-              horizontal: column >= 3 && column <= 7 ? 'center' : 'left',
-            };
-          });
-          worksheetRow.commit();
-          rows += 1;
+
+        for (const actuator of actuatorNames) {
+          const actuatorRows = [...tables[actuator]].sort(
+            (left, right) => Date.parse(left.TIME) - Date.parse(right.TIME),
+          );
+
+          for (const row of actuatorRows) {
+            const worksheetRow = worksheet.addRow([
+              sector,
+              actuator,
+              new Date(row.TIME),
+              row.FLOW,
+              row.VOL,
+              row.NOTE,
+            ]);
+            worksheetRow.eachCell({ includeEmpty: true }, (cell, column) => {
+              cell.border = {
+                top: { style: 'thin', color: { argb: 'FFD9E2F3' } },
+                left: { style: 'thin', color: { argb: 'FFD9E2F3' } },
+                bottom: { style: 'thin', color: { argb: 'FFD9E2F3' } },
+                right: { style: 'thin', color: { argb: 'FFD9E2F3' } },
+              };
+              cell.alignment = {
+                vertical: 'middle',
+                horizontal: column >= 3 && column <= 5 ? 'center' : 'left',
+              };
+            });
+            worksheetRow.commit();
+            rows += 1;
+          }
         }
       }
 
