@@ -10,3 +10,4 @@ tmp/
 *.xlsx
 *.tsbuildinfo
 log.json
+.worktrees/
