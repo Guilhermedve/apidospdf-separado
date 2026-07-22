@@ -1,0 +1,37 @@
+{
+  "farm": "Maringa - Citrosuco",
+  "slug": "maringa-citrosuco",
+  "generatedAt": "2026-07-22T13:30:00.000Z",
+  "windowStart": "2026-07-15T13:30:00.000Z",
+  "windowEnd": "2026-07-22T13:30:00.000Z",
+  "summary": {
+    "tables": 3,
+    "rows": 3,
+    "totalTables": 3,
+    "tablesWithMatches": 2,
+    "totalRows": 3
+  },
+  "sectors": {
+    "SETOR_FILTRO_H_OP10_P2": {
+      "tables": {
+        "FILTRO_H_OP10_L2_P2A": [
+          { "TIME": "2026-07-18T11:00:00.000Z", "FLOW": 12.5, "VOL": 80, "NOTE": "Ativado" }
+        ]
+      }
+    },
+    "SETOR_FILTRO_H_OP2_P2": {
+      "tables": {
+        "FILTRO_H_OP2_L114_P2A": [
+          { "TIME": "2026-07-17T07:04:47.000Z", "FLOW": 0, "VOL": 0, "NOTE": null },
+          { "TIME": "2026-07-17T07:00:05.000Z", "FLOW": 3.2, "VOL": 15, "NOTE": "$Ativado $" }
+        ]
+      }
+    },
+    "SETOR_FILTRO_H_OP99_P2": {
+      "tables": {
+        "FILTRO_H_OP99_L1_P2A": []
+      }
+    }
+  },
+  "errors": [{ "table": "FILTRO_INDISPONIVEL", "message": "Tabela indisponivel" }]
+}

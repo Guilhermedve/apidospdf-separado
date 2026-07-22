@@ -98,12 +98,13 @@ const actuatorSectorSchema = z.object({
 ```
 
 Define strict `summary`, optional strict `errors`, and `sectors`. In
-`superRefine`, flatten all `sector.tables` values and enforce:
+`superRefine`, flatten all `sector.tables` values, count non-empty tables,
+and enforce:
 
 ```ts
 summary.tables === tableCount;
-summary.tablesWithMatches === tableCount;
-summary.totalTables >= tableCount;
+summary.tablesWithMatches === nonEmptyTableCount;
+summary.totalTables === tableCount;
 summary.rows === rowCount;
 summary.totalRows === rowCount;
 ```
