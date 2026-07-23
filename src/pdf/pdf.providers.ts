@@ -6,10 +6,23 @@ import type {
   PdfFileSystem,
 } from './pdf.adapters';
 
+// Puppeteer ships as ESM. Under `module: commonjs`, a bare `import('puppeteer')`
+// downlevels to `require('puppeteer')`, and Jest's CJS sandbox cannot evaluate
+// the ESM entry (a real-browser smoke test would fail to load it). Resolving
+// through the *genuine* builtin `module` (via `process.getBuiltinModule`, which
+// bypasses Jest's module registry) yields Node's native `require`, relying on
+// Node 22+ `require(esm)` support identically in tests and at runtime.
+const nativeRequire = process
+  .getBuiltinModule('module')
+  .createRequire(__filename);
+
 @Injectable()
 export class PuppeteerPdfBrowserLauncher implements PdfBrowserLauncher {
   async launch(): Promise<PdfBrowser> {
-    const { default: puppeteer } = await import('puppeteer');
+    const puppeteerModule = nativeRequire('puppeteer') as {
+      default?: typeof import('puppeteer').default;
+    } & typeof import('puppeteer').default;
+    const puppeteer = puppeteerModule.default ?? puppeteerModule;
     return (await puppeteer.launch({
       args: [
         '--no-sandbox',
