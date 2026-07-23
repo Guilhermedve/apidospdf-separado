@@ -33,6 +33,7 @@ describe('ReportsController', () => {
       farmSlug: 'entre-rios',
       period: '3d',
       deviceAddrs: ['045'],
+      reportType: 'detailed',
     };
 
     await expect(controller.create(dto)).resolves.toMatchObject({
