@@ -28,7 +28,12 @@ export class ReportProcessor {
       );
       await job.updateProgress('processing-data');
       await job.updateProgress('rendering-html');
-      const html = this.documents.render(document, job.data.deviceAddrs);
+      const reportType = job.data.reportType ?? 'detailed';
+      const html = this.documents.render(
+        document,
+        job.data.deviceAddrs,
+        reportType,
+      );
       await job.updateProgress('generating-pdf');
       return await this.pdf.generate(String(job.id), html);
     } catch (error) {

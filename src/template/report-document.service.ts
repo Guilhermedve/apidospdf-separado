@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { BatteryReportMapper } from '../battery/battery-report.mapper';
 import { DeviceSelectionService } from '../battery/device-selection.service';
 import type { DatapoolPeriodDocument } from '../datapool/datapool.types';
+import type { ReportType } from '../reports/report-job.types';
 import { ReportHtmlRenderer } from './report-html.renderer';
 import { ReportViewModelBuilder } from './report-view-model.builder';
 
@@ -17,6 +18,8 @@ export class ReportDocumentService {
   render(
     document: DatapoolPeriodDocument,
     requestedAddrs?: string[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    reportType: ReportType = 'detailed',
   ): string {
     const selectedDevices = this.deviceSelection.select(
       document,

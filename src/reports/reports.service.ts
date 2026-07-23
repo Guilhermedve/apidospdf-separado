@@ -25,7 +25,10 @@ export class ReportsService {
 
   async create(command: CreateReportCommand): Promise<QueuedReport> {
     const job = await this.queue.add({
-      ...command,
+      farmSlug: command.farmSlug,
+      period: command.period,
+      deviceAddrs: command.deviceAddrs,
+      reportType: command.reportType ?? 'detailed',
       requestedAt: this.clock.now().toISOString(),
     });
 
