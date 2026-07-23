@@ -5,6 +5,8 @@ import ExcelJS from 'exceljs';
 import { parseActuatorCacheDocument } from '../../../src/actuator-excel/actuator-cache.schema';
 import { ActuatorWorkbookService } from '../../../src/actuator-excel/actuator-workbook.service';
 
+const fixture = require('../../fixtures/actuator-excel/maringa-citrosuco-new-contract.json') as unknown;
+
 describe('ActuatorWorkbookService integration', () => {
   const path = join(process.cwd(), 'tmp', 'actuator-workbook-integration.xlsx');
 
@@ -12,30 +14,8 @@ describe('ActuatorWorkbookService integration', () => {
     await rm(path, { force: true });
   });
 
-  it('grava um XLSX que pode ser reaberto com todos os registros', async () => {
-    const document = parseActuatorCacheDocument({
-      farm: 'Central - AF',
-      slug: 'central-af',
-      generatedAt: '2026-07-13T12:00:00.000Z',
-      windowStart: '2026-07-12T12:00:00.000Z',
-      windowEnd: '2026-07-13T12:00:00.000Z',
-      filter: { column: 'NOTE', contains: 'FIR' },
-      summary: { totalTables: 1, tablesWithMatches: 1, totalRows: 2 },
-      tables: {
-        CX01: [
-          {
-            TIME: '2026-07-13T10:00:00.000Z',
-            ADDR: 1,
-            NOTE: "$'FIR206_AGUA' injetou 80 de 80 litros$",
-          },
-          {
-            TIME: '2026-07-13T11:00:00.000Z',
-            ADDR: 1,
-            NOTE: '$Falha na fertirrigação. (FIR:233)$',
-          },
-        ],
-      },
-    });
+  it('grava um XLSX que pode ser reaberto com o contrato novo', async () => {
+    const document = parseActuatorCacheDocument(fixture);
 
     await new ActuatorWorkbookService().write(
       document,
@@ -52,20 +32,21 @@ describe('ActuatorWorkbookService integration', () => {
     expect(workbook.worksheets).toHaveLength(1);
     expect(sheet.getRow(1).values).toEqual([
       undefined,
-      'ÁREA',
+      'SETOR',
+      'ATUADOR',
       'DATA/HORA',
-      'ADDR',
-      'FIR',
-      'PRODUTO',
-      'INJETADO (L)',
-      'PROGRAMADO (L)',
+      'VAZÃO',
+      'VOLUME',
       'NOTA',
     ]);
     expect(sheet.rowCount - 1).toBe(document.summary.totalRows);
-    expect(sheet.getRow(2).getCell(5).value).toBe('FIR206_AGUA');
-    expect(sheet.getRow(2).getCell(6).value).toBe(80);
-    expect(sheet.getRow(3).getCell(4).value).toBe(233);
-    expect(sheet.getRow(3).getCell(5).value).toBeNull();
-    expect(sheet.autoFilter).toBe('A1:H1');
+    expect(sheet.getRow(2).getCell(1).value).toBe('SETOR_FILTRO_H_OP2_P2');
+    expect(sheet.getRow(2).getCell(2).value).toBe(
+      'FILTRO_H_OP2_L114_P2A',
+    );
+    expect(sheet.getRow(2).getCell(4).value).toBe(3.2);
+    expect(sheet.getRow(2).getCell(5).value).toBe(15);
+    expect(sheet.getRow(3).getCell(6).value).toBeNull();
+    expect(sheet.autoFilter).toBe('A1:F1');
   });
 });

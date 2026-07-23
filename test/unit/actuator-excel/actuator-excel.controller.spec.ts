@@ -5,22 +5,11 @@ import {
 } from '@nestjs/common';
 import { PassThrough } from 'node:stream';
 import { ActuatorExcelController } from '../../../src/actuator-excel/actuator-excel.controller';
+import { parseActuatorCacheDocument } from '../../../src/actuator-excel/actuator-cache.schema';
 import { ApplicationError } from '../../../src/common/errors/application-error';
 
-const document = {
-  farm: 'Central - AF',
-  slug: 'central-af',
-  generatedAt: '2026-07-13T12:00:00.000Z',
-  windowStart: '2026-07-12T12:00:00.000Z',
-  windowEnd: '2026-07-13T12:00:00.000Z',
-  filter: { column: 'NOTE', contains: 'FIR' },
-  summary: { totalTables: 1, tablesWithMatches: 1, totalRows: 1 },
-  tables: {
-    CX01: [
-      { TIME: '2026-07-13T10:00:00.000Z', ADDR: 1, NOTE: 'FIR ON' },
-    ],
-  },
-};
+const fixture = require('../../fixtures/actuator-excel/maringa-citrosuco-new-contract.json') as unknown;
+const document = parseActuatorCacheDocument(fixture);
 
 class FakeClient {
   requestedSlug?: string;

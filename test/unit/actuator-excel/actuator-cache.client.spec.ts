@@ -3,20 +3,7 @@ import { AppConfigService } from '../../../src/config/app-config.service';
 import type { AppConfig } from '../../../src/config/app-config.schema';
 import type { DatapoolFetch } from '../../../src/datapool/datapool.types';
 
-const validDocument = {
-  farm: 'Central - AF',
-  slug: 'central-af',
-  generatedAt: '2026-07-13T12:00:00.000Z',
-  windowStart: '2026-07-12T12:00:00.000Z',
-  windowEnd: '2026-07-13T12:00:00.000Z',
-  filter: { column: 'NOTE', contains: 'FIR' },
-  summary: { totalTables: 1, tablesWithMatches: 1, totalRows: 1 },
-  tables: {
-    CX06_FLA25: [
-      { TIME: '2026-07-13T10:00:00.000Z', ADDR: 25, NOTE: 'FIR ON' },
-    ],
-  },
-};
+const validDocument = require('../../fixtures/actuator-excel/maringa-citrosuco-new-contract.json') as unknown;
 
 const appConfig: AppConfig = {
   port: 3000,
@@ -71,7 +58,7 @@ describe('ActuatorCacheClient', () => {
       headers: { accept: 'application/json', 'accept-encoding': 'gzip, br' },
     });
     expect(capturedInit?.signal).toBeInstanceOf(AbortSignal);
-    expect(result.summary.totalRows).toBe(1);
+    expect(result.summary.totalRows).toBe(3);
   });
 
   it('codifica o slug na URL', async () => {
@@ -128,7 +115,7 @@ describe('ActuatorCacheClient', () => {
 
   it('rejeita resposta fora do contrato', async () => {
     const invalid = structuredClone(validDocument) as Record<string, unknown>;
-    delete invalid.tables;
+    delete invalid.sectors;
     const fetcher: DatapoolFetch = async () => jsonResponse(invalid);
 
     await expect(createClient(fetcher).getFarm('central-af')).rejects.toMatchObject({

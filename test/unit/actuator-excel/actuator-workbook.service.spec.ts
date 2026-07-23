@@ -6,36 +6,8 @@ import {
   MAX_EXCEL_DATA_ROWS,
 } from '../../../src/actuator-excel/actuator-workbook.service';
 
-const document = parseActuatorCacheDocument({
-  farm: 'Central - AF',
-  slug: 'central-af',
-  generatedAt: '2026-07-13T12:00:00.000Z',
-  windowStart: '2026-07-12T12:00:00.000Z',
-  windowEnd: '2026-07-13T12:00:00.000Z',
-  filter: { column: 'NOTE', contains: 'FIR' },
-  summary: { totalTables: 2, tablesWithMatches: 2, totalRows: 3 },
-  tables: {
-    CX10: [
-      {
-        TIME: '2026-07-13T11:00:00.000Z',
-        ADDR: 10,
-        NOTE: '$Falha na fertirrigação. (FIR:233)$',
-      },
-    ],
-    CX02: [
-      {
-        TIME: '2026-07-13T10:30:00.000Z',
-        ADDR: 2,
-        NOTE: "$'FIR208_AGUA' injetou 45 de 45 litros$",
-      },
-      {
-        TIME: '2026-07-13T09:30:00.000Z',
-        ADDR: 2,
-        NOTE: "$'FIR206-AGUA' injetou 80 de 90 litros$",
-      },
-    ],
-  },
-});
+const fixture = require('../../fixtures/actuator-excel/maringa-citrosuco-new-contract.json') as unknown;
+const document = parseActuatorCacheDocument(fixture);
 
 async function generateWorkbook() {
   const output = new PassThrough();
@@ -52,7 +24,7 @@ async function generateWorkbook() {
 }
 
 describe('ActuatorWorkbookService', () => {
-  it('gera somente a aba e as colunas aprovadas', async () => {
+  it('gera somente a aba e as seis colunas aprovadas', async () => {
     const { result, workbook } = await generateWorkbook();
     const sheet = workbook.getWorksheet('Atuadores')!;
 
@@ -62,63 +34,45 @@ describe('ActuatorWorkbookService', () => {
     ]);
     expect(sheet.getRow(1).values).toEqual([
       undefined,
-      'ÁREA',
+      'SETOR',
+      'ATUADOR',
       'DATA/HORA',
-      'ADDR',
-      'FIR',
-      'PRODUTO',
-      'INJETADO (L)',
-      'PROGRAMADO (L)',
+      'VAZÃO',
+      'VOLUME',
       'NOTA',
     ]);
     expect(sheet.rowCount).toBe(4);
   });
 
-  it('ordena por atuador natural e depois por data', async () => {
+  it('ordena naturalmente por setor, atuador e depois por data', async () => {
     const { workbook } = await generateWorkbook();
     const sheet = workbook.getWorksheet('Atuadores')!;
 
-    expect(sheet.getRow(2).getCell(1).value).toBe('CX02');
-    expect(sheet.getRow(2).getCell(2).value).toEqual(
-      new Date('2026-07-13T09:30:00.000Z'),
-    );
-    expect(sheet.getRow(3).getCell(2).value).toEqual(
-      new Date('2026-07-13T10:30:00.000Z'),
-    );
-    expect(sheet.getRow(4).getCell(1).value).toBe('CX10');
-  });
-
-  it('preenche FIR, produto e volumes da nota de injecao', async () => {
-    const { workbook } = await generateWorkbook();
-    const sheet = workbook.getWorksheet('Atuadores')!;
-
-    expect(sheet.getRow(3).getCell(3).value).toBe(2);
-    expect(sheet.getRow(3).values).toEqual([
+    expect(sheet.getRow(2).values).toEqual([
       undefined,
-      'CX02',
-      new Date('2026-07-13T10:30:00.000Z'),
-      2,
-      208,
-      'FIR208_AGUA',
-      45,
-      45,
-      'FIR208_AGUA injetou 45 de 45 litros',
+      'SETOR_FILTRO_H_OP2_P2',
+      'FILTRO_H_OP2_L114_P2A',
+      new Date('2026-07-17T07:00:05.000Z'),
+      3.2,
+      15,
+      '$Ativado $',
     ]);
+    expect(sheet.getRow(3).getCell(3).value).toEqual(
+      new Date('2026-07-17T07:04:47.000Z'),
+    );
+    expect(sheet.getRow(4).getCell(1).value).toBe(
+      'SETOR_FILTRO_H_OP10_P2',
+    );
   });
 
-  it('mantem falhas com FIR e colunas derivadas vazias', async () => {
+  it('preserva vazao e volume numericos e deixa nota nula em branco', async () => {
     const { workbook } = await generateWorkbook();
     const sheet = workbook.getWorksheet('Atuadores')!;
-    const failure = sheet.getRow(4);
+    const nullNoteRow = sheet.getRow(3);
 
-    expect(failure.getCell(1).value).toBe('CX10');
-    expect(failure.getCell(4).value).toBe(233);
-    expect(failure.getCell(5).value).toBeNull();
-    expect(failure.getCell(6).value).toBeNull();
-    expect(failure.getCell(7).value).toBeNull();
-    expect(failure.getCell(8).value).toBe(
-      'Falha na fertirrigação. (FIR:233)',
-    );
+    expect(nullNoteRow.getCell(4).value).toBe(0);
+    expect(nullNoteRow.getCell(5).value).toBe(0);
+    expect(nullNoteRow.getCell(6).value).toBeNull();
   });
 
   it('configura filtro, cabecalho azul centralizado, bordas e data', async () => {
@@ -126,9 +80,9 @@ describe('ActuatorWorkbookService', () => {
     const sheet = workbook.getWorksheet('Atuadores')!;
     const header = sheet.getRow(1);
 
-    expect(sheet.autoFilter).toEqual('A1:H1');
+    expect(sheet.autoFilter).toEqual('A1:F1');
     expect(sheet.views[0]).toMatchObject({ state: 'frozen', ySplit: 1 });
-    expect(sheet.getColumn(2).numFmt).toBe('dd/mm/yyyy hh:mm:ss');
+    expect(sheet.getColumn(3).numFmt).toBe('dd/mm/yyyy hh:mm:ss');
     expect(header.font).toMatchObject({
       bold: true,
       color: { argb: 'FFFFFFFF' },
