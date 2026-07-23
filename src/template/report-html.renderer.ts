@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { renderDetailedReportHtml } from '../pdf/report-detailed.html';
+import { renderReportHtml } from '../pdf/report-html';
 import { renderSimpleReportHtml } from '../pdf/report-simple.html';
-import type {
-  DetailedReportData,
-  SimpleReportData,
-} from './report-data.types';
+import { adaptViewModelToLegacyReport } from './legacy-report.adapter';
+import type { SimpleReportData } from './report-data.types';
+import type { ReportViewModel } from './report-view-model.types';
 
 @Injectable()
 export class ReportHtmlRenderer {
@@ -12,7 +11,7 @@ export class ReportHtmlRenderer {
     return renderSimpleReportHtml(data);
   }
 
-  renderDetailed(data: DetailedReportData): string {
-    return renderDetailedReportHtml(data);
+  render(viewModel: ReportViewModel): string {
+    return renderReportHtml(adaptViewModelToLegacyReport(viewModel));
   }
 }
