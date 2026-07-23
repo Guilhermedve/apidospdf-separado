@@ -1,13 +1,18 @@
 import type { ErrorCode } from '../common/errors/error-codes';
 import type { ReportPeriod } from '../datapool/datapool.types';
 
+export type ReportType = 'simple' | 'detailed';
+
 export interface CreateReportCommand {
   farmSlug: string;
   period: ReportPeriod;
   deviceAddrs?: string[];
+  reportType?: ReportType;
 }
 
-export interface GenerateReportJobData extends CreateReportCommand {
+export interface GenerateReportJobData
+  extends Omit<CreateReportCommand, 'reportType'> {
+  reportType: ReportType;
   requestedAt: string;
 }
 

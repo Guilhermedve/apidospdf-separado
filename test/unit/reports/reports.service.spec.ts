@@ -32,6 +32,7 @@ describe('ReportsService', () => {
       farmSlug: 'entre-rios',
       period: '3d',
       deviceAddrs: ['045'],
+      reportType: 'simple',
     });
 
     expect(created).toEqual({
@@ -45,8 +46,23 @@ describe('ReportsService', () => {
         farmSlug: 'entre-rios',
         period: '3d',
         deviceAddrs: ['045'],
+        reportType: 'simple',
         requestedAt: '2026-07-10T15:00:00.000Z',
       },
+    ]);
+  });
+
+  it('assume a variante detailed quando omitida', async () => {
+    const queue = new InMemoryReportsQueue();
+    const service = new ReportsService(queue, clock);
+
+    await service.create({
+      farmSlug: 'entre-rios',
+      period: '3d',
+    });
+
+    expect(queue.added).toEqual([
+      expect.objectContaining({ reportType: 'detailed' }),
     ]);
   });
 

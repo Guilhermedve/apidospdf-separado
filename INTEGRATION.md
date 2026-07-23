@@ -210,3 +210,43 @@ $r.devices.PSObject.Properties.Value |
 
 `raw[]` traz o log bruto completo de `LOG_DEV` (pode ser grande). Se o agente só
 precisa do diagnóstico, ignore `raw` e leia `health`/`stats`.
+
+---
+
+## 9. Relatórios PDF (assíncrono)
+
+`POST /reports` enfileira a geração de um PDF de saúde das baterias e responde
+`202` com um `jobId`. Consulte `GET /reports/:jobId` até `status: "done"` e baixe
+em `GET /reports/:jobId/download`. O artefato expira 30 minutos após ser gerado.
+
+O corpo aceita o campo opcional `reportType`, que seleciona a variante do laudo:
+
+- `simple` — relatório **executivo**: cabeçalho, resumo executivo (índice de
+  saúde, totais, alertas, amostras, contagem de automação/sensores) e parecer
+  geral. Não inclui dispositivos individuais, telemetria diária, mapa de calor
+  nem eventos técnicos.
+- `detailed` — relatório **técnico**: tudo do executivo mais o mapa de calor, as
+  seções de automação e sensoriamento com telemetria diária e tendência, além do
+  histórico de eventos técnicos.
+
+`reportType` é **opcional** e assume `detailed` quando omitido. Ele **não** altera
+as respostas de `202`, status, download ou a expiração de 30 minutos. Quando
+`deviceAddrs` é informado, ele filtra tanto os dados detalhados quanto os totais
+do resumo executivo de forma consistente.
+
+```json
+{
+  "farmSlug": "entre-rios",
+  "period": "3d",
+  "reportType": "simple"
+}
+```
+
+```json
+{
+  "farmSlug": "entre-rios",
+  "period": "7d",
+  "deviceAddrs": ["045", "038"],
+  "reportType": "detailed"
+}
+```

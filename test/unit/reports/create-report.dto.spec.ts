@@ -81,4 +81,37 @@ describe('CreateReportDto', () => {
 
     expect(errors.some((error) => error.property === 'days')).toBe(true);
   });
+
+  it('aceita a variante simple', async () => {
+    const { dto, errors } = await validateInput({
+      farmSlug: 'entre-rios',
+      period: '3d',
+      reportType: 'simple',
+    });
+
+    expect(errors).toHaveLength(0);
+    expect(dto).toMatchObject({ reportType: 'simple' });
+  });
+
+  it('assume detailed quando a variante é omitida', async () => {
+    const { dto, errors } = await validateInput({
+      farmSlug: 'entre-rios',
+      period: '3d',
+    });
+
+    expect(errors).toHaveLength(0);
+    expect(dto).toMatchObject({ reportType: 'detailed' });
+  });
+
+  it('rejeita variante desconhecida', async () => {
+    const { errors } = await validateInput({
+      farmSlug: 'entre-rios',
+      period: '3d',
+      reportType: 'complete',
+    });
+
+    expect(
+      errors.some((error) => error.property === 'reportType'),
+    ).toBe(true);
+  });
 });

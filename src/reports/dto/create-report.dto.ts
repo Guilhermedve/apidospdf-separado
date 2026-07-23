@@ -9,6 +9,7 @@ import {
   Matches,
 } from 'class-validator';
 import type { ReportPeriod } from '../../datapool/datapool.types';
+import type { ReportType } from '../report-job.types';
 
 function normalizeDeviceAddr(value: unknown): string {
   const text = String(value).trim();
@@ -37,4 +38,8 @@ export class CreateReportDto {
   @IsString({ each: true })
   @Matches(/^\d{3}$/, { each: true })
   deviceAddrs?: string[];
+
+  @IsOptional()
+  @IsIn(['simple', 'detailed'])
+  reportType: ReportType = 'detailed';
 }
