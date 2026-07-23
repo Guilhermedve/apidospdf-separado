@@ -17,6 +17,18 @@ describe('ReportHtmlRenderer', () => {
     }
   });
 
+  it('usa o mesmo modelo visual com mapa unificado na variante simples', () => {
+    const html = renderer.renderSimple(viewModel());
+
+    expect(html).toContain('class="hero"');
+    expect(html).toContain('data-testid="heatmap-devices"');
+    expect(html).not.toContain('data-testid="heatmap-automation"');
+    expect(html).not.toContain('data-testid="heatmap-sensors"');
+    expect(html).toContain('id="cause-bars"');
+    expect(html).toContain('id="rank"');
+    expect(html).toContain('id="device-data"');
+  });
+
   it('escapa textos dinâmicos e não usa recursos externos', () => {
     const html = renderer.render(
       viewModel({

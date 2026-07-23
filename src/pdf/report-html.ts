@@ -17,6 +17,12 @@ type DashboardDailyHealth = {
 
 type DirClassification = 'AUTOMACAO' | 'SENSORIAMENTO';
 
+export type HeatmapMode = 'split' | 'unified';
+
+export type ReportHtmlOptions = {
+  heatmapMode?: HeatmapMode;
+};
+
 type HtmlDirFunction = {
   kind?: string;
   label: string;
@@ -364,12 +370,23 @@ ${device.motivo}`;
 function renderHeatmapArea(
   title: string,
   devices: DashboardDevice[],
-  variant: 'auto' | 'sense',
+  variant: 'auto' | 'sense' | 'all',
 ): string {
-  const testId = variant === 'auto' ? 'heatmap-automation' : 'heatmap-sensors';
+  const testId = {
+    auto: 'heatmap-automation',
+    sense: 'heatmap-sensors',
+    all: 'heatmap-devices',
+  }[variant];
   const cells = devices.length
     ? devices
-        .map((device) => renderHeatmapCell(device, variant === 'sense'))
+        .map((device) =>
+          renderHeatmapCell(
+            device,
+            variant === 'sense' ||
+              (variant === 'all' &&
+                device.classification === 'SENSORIAMENTO'),
+          ),
+        )
         .join('')
     : '<div class="heat-empty">Nenhum dispositivo nesta categoria.</div>';
   const countLabel = `${devices.length} ${
@@ -514,7 +531,10 @@ function renderInventoryPanel(
       </div>`;
 }
 
-export function renderReportHtml(report: ReportQueryResult): string {
+export function renderReportHtml(
+  report: ReportQueryResult,
+  options: ReportHtmlOptions = {},
+): string {
   const devices = report.items.map(toDashboardDevice);
   // Classification is decided in ReportQueryService from the NEWSIR CAD_DIR
   // rules; the heatmap only splits the already-classified devices into two
@@ -533,7 +553,12 @@ export function renderReportHtml(report: ReportQueryResult): string {
       ? `${report.hours} ${report.hours === 1 ? 'hora' : 'horas'}`
       : `${report.days} dias`;
   const relatorioId = reportId(report.generatedAt);
-  const heatmapSplit = `<div class="heat-split">
+  const heatmap =
+    options.heatmapMode === 'unified'
+      ? `<div class="heat-unified">
+        ${renderHeatmapArea('Dispositivos', sortDashboardDevices(devices), 'all')}
+      </div>`
+      : `<div class="heat-split">
         ${renderHeatmapArea('Automação', automationDevices, 'auto')}
         ${renderHeatmapArea('Sensores', sensorDevices, 'sense')}
       </div>`;
@@ -675,10 +700,12 @@ export function renderReportHtml(report: ReportQueryResult): string {
   .heat-area{border:1px solid var(--line);border-radius:var(--r);padding:12px;background:#fff;min-width:0;}
   .heat-area.auto{border-top:3px solid var(--gold-deep);}
   .heat-area.sense{border-top:3px solid var(--ok);}
+  .heat-area.all{border-top:3px solid var(--gold-deep);}
   .heat-area-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px;}
   .ha-title{font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
   .heat-area.auto .ha-title{color:var(--gold-deep);}
   .heat-area.sense .ha-title{color:var(--ok-deep);}
+  .heat-area.all .ha-title{color:var(--gold-deep);}
   .ha-count{font-size:10px;color:var(--muted);white-space:nowrap;}
   .heat-empty{padding:16px 8px;color:var(--muted);font-size:11px;text-align:center;}
   .heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px;}
@@ -939,7 +966,7 @@ export function renderReportHtml(report: ReportQueryResult): string {
           <span><i style="background:var(--crit)"></i>Crítico</span>
         </div>
       </div>
-      ${heatmapSplit}
+      ${heatmap}
     </section>
 
     <!-- ============ REGISTERED CHANGES ============ -->
