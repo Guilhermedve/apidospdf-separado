@@ -1,16 +1,21 @@
+import { readFileSync } from 'node:fs';
 import { readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
+import { BatteryAnalysisService } from '../../../src/battery/battery-analysis.service';
+import { BatteryReportMapper } from '../../../src/battery/battery-report.mapper';
+import { DeviceSelectionService } from '../../../src/battery/device-selection.service';
 import type { AppConfig } from '../../../src/config/app-config.schema';
 import { AppConfigService } from '../../../src/config/app-config.service';
 import type { Clock } from '../../../src/datapool/datapool.types';
-import { renderDetailedReportHtml } from '../../../src/pdf/report-detailed.html';
+import { parseDatapoolPeriodDocument } from '../../../src/datapool/datapool.schema';
 import { renderSimpleReportHtml } from '../../../src/pdf/report-simple.html';
 import { PdfService } from '../../../src/pdf/pdf.service';
 import { PuppeteerPdfBrowserLauncher } from '../../../src/pdf/pdf.providers';
-import type {
-  DetailedReportData,
-  SimpleReportData,
-} from '../../../src/template/report-data.types';
+import { ReportDataBuilder } from '../../../src/template/report-data.builder';
+import type { SimpleReportData } from '../../../src/template/report-data.types';
+import { ReportDocumentService } from '../../../src/template/report-document.service';
+import { ReportHtmlRenderer } from '../../../src/template/report-html.renderer';
+import { ReportViewModelBuilder } from '../../../src/template/report-view-model.builder';
 import { ReportStorageService } from '../../../src/storage/report-storage.service';
 
 jest.setTimeout(120_000);
@@ -18,6 +23,14 @@ jest.setTimeout(120_000);
 const root = join(process.cwd(), 'tmp', 'pdf-variants-integration');
 const now = new Date('2026-07-10T15:00:00.000Z');
 const clock: Clock = { now: () => now };
+const document = parseDatapoolPeriodDocument(
+  JSON.parse(
+    readFileSync(
+      join(process.cwd(), 'test', 'fixtures', 'datapool', 'entre-rios-3d.json'),
+      'utf8',
+    ),
+  ),
+);
 
 function header(title: string): SimpleReportData['header'] {
   return {
@@ -53,100 +66,6 @@ const simpleData: SimpleReportData = {
   },
 };
 
-const detailedData: DetailedReportData = {
-  ...simpleData,
-  header: header('Relatório técnico de baterias'),
-  automationDevices: [
-    {
-      addr: '010',
-      classification: 'AUTOMACAO',
-      functionLabel: 'Atuador',
-      model: 'MOD-A',
-      powerType: 'FONTE',
-      status: 'OK',
-      diagnosis: 'NORMAL',
-      confidence: 'ALTA',
-      reason: 'Operação estável.',
-      sampleCount: 12,
-      minimumVoltage: 12.9,
-      maximumVoltage: 13.8,
-      averageVoltage: 13.3,
-      dailyTelemetry: [
-        {
-          day: '2026-07-08',
-          dayLabel: '08/07',
-          sampleCount: 6,
-          minimumVoltage: 12.9,
-          maximumVoltage: 13.6,
-          averageVoltage: 13.2,
-          diagnosis: 'NORMAL',
-          healthScore: 92,
-        },
-        {
-          day: '2026-07-09',
-          dayLabel: '09/07',
-          sampleCount: 6,
-          minimumVoltage: 13.0,
-          maximumVoltage: 13.8,
-          averageVoltage: 13.4,
-          diagnosis: 'NORMAL',
-          healthScore: 96,
-        },
-      ],
-    },
-  ],
-  sensingDevices: [
-    {
-      addr: '045',
-      classification: 'SENSORIAMENTO',
-      functionLabel: 'Sensor analógico',
-      model: 'MOD-S',
-      powerType: 'SOLAR',
-      status: 'OK',
-      diagnosis: 'NORMAL',
-      confidence: 'MEDIA',
-      reason: 'Sem anomalias.',
-      sampleCount: 12,
-      minimumVoltage: 12.7,
-      maximumVoltage: 13.5,
-      averageVoltage: 13.1,
-      dailyTelemetry: [
-        {
-          day: '2026-07-08',
-          dayLabel: '08/07',
-          sampleCount: 6,
-          minimumVoltage: 12.7,
-          maximumVoltage: 13.3,
-          averageVoltage: 13.0,
-          diagnosis: 'NORMAL',
-          healthScore: 88,
-        },
-        {
-          day: '2026-07-09',
-          dayLabel: '09/07',
-          sampleCount: 6,
-          minimumVoltage: 12.9,
-          maximumVoltage: 13.5,
-          averageVoltage: 13.2,
-          diagnosis: 'NORMAL',
-          healthScore: 90,
-        },
-      ],
-    },
-  ],
-  technicalEvents: [
-    {
-      deviceAddr: '045',
-      kind: 'NOTE',
-      occurredAt: '2026-07-08T08:00:00.000Z',
-      occurredAtLabel: '08/07/2026 05:00',
-      severity: 'INFO',
-      message: 'Reinício manual',
-      count: 1,
-    },
-  ],
-};
-
 describe('report variants as PDF', () => {
   let pdf: PdfService;
   let storage: ReportStorageService;
@@ -171,13 +90,24 @@ describe('report variants as PDF', () => {
   });
 
   it('gera um PDF técnico válido', async () => {
-    await pdf.generate('detailed-smoke', renderDetailedReportHtml(detailedData));
+    const html = createReportService().render(document, undefined, 'detailed');
+    await pdf.generate('detailed-smoke', html);
 
     const bytes = await readFile(storage.finalPath('detailed-smoke'));
     expect(bytes.subarray(0, 5).toString('ascii')).toBe('%PDF-');
     expect(bytes.length).toBeGreaterThan(1_000);
   });
 });
+
+function createReportService(): ReportDocumentService {
+  return new ReportDocumentService(
+    new DeviceSelectionService(),
+    new BatteryReportMapper(new BatteryAnalysisService()),
+    new ReportViewModelBuilder(),
+    new ReportDataBuilder(),
+    new ReportHtmlRenderer(),
+  );
+}
 
 function configService(storageRoot: string): AppConfigService {
   const config: AppConfig = {

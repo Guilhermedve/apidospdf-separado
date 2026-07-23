@@ -4,6 +4,7 @@ import { BatteryAnalysisService } from '../../../src/battery/battery-analysis.se
 import { BatteryReportMapper } from '../../../src/battery/battery-report.mapper';
 import { DeviceSelectionService } from '../../../src/battery/device-selection.service';
 import { parseDatapoolPeriodDocument } from '../../../src/datapool/datapool.schema';
+import { ReportDataBuilder } from '../../../src/template/report-data.builder';
 import { ReportDocumentService } from '../../../src/template/report-document.service';
 import { ReportHtmlRenderer } from '../../../src/template/report-html.renderer';
 import { ReportViewModelBuilder } from '../../../src/template/report-view-model.builder';
@@ -28,11 +29,29 @@ function createService(): ReportDocumentService {
     new DeviceSelectionService(),
     new BatteryReportMapper(new BatteryAnalysisService()),
     new ReportViewModelBuilder(),
+    new ReportDataBuilder(),
     new ReportHtmlRenderer(),
   );
 }
 
 describe('ReportDocumentService', () => {
+  it('mantem a variante simples no modelo executivo', () => {
+    const html = createService().render(document, undefined, 'simple');
+
+    expect(html).toContain('Resumo executivo');
+    expect(html).not.toContain('class="hero"');
+    expect(html).not.toContain('id="device-data"');
+  });
+
+  it('usa o modelo antigo para a variante detalhada', () => {
+    const html = createService().render(document, undefined, 'detailed');
+
+    expect(html).toContain('class="hero"');
+    expect(html).toContain('class="heat-split"');
+    expect(html).toContain('id="device-data"');
+    expect(html).not.toContain('Telemetria diária');
+  });
+
   it('integra os 42 dispositivos recebidos no modelo antigo', () => {
     const html = createService().render(document);
     const devices = extractDevices(html);
