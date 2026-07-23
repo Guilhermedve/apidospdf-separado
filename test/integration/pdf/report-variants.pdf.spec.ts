@@ -8,11 +8,8 @@ import type { AppConfig } from '../../../src/config/app-config.schema';
 import { AppConfigService } from '../../../src/config/app-config.service';
 import type { Clock } from '../../../src/datapool/datapool.types';
 import { parseDatapoolPeriodDocument } from '../../../src/datapool/datapool.schema';
-import { renderSimpleReportHtml } from '../../../src/pdf/report-simple.html';
 import { PdfService } from '../../../src/pdf/pdf.service';
 import { PuppeteerPdfBrowserLauncher } from '../../../src/pdf/pdf.providers';
-import { ReportDataBuilder } from '../../../src/template/report-data.builder';
-import type { SimpleReportData } from '../../../src/template/report-data.types';
 import { ReportDocumentService } from '../../../src/template/report-document.service';
 import { ReportHtmlRenderer } from '../../../src/template/report-html.renderer';
 import { ReportViewModelBuilder } from '../../../src/template/report-view-model.builder';
@@ -32,40 +29,6 @@ const document = parseDatapoolPeriodDocument(
   ),
 );
 
-function header(title: string): SimpleReportData['header'] {
-  return {
-    title,
-    unitName: 'fazenda exemplo',
-    period: '3d',
-    periodLabel: 'Últimos 3 dias',
-    windowStartLabel: '07/07/2026 10:00',
-    windowEndLabel: '10/07/2026 10:00',
-    generatedAt: now.toISOString(),
-    generatedAtLabel: '10/07/2026 12:00',
-    reportId: 'fazenda-3d-20260710',
-  };
-}
-
-const simpleData: SimpleReportData = {
-  header: header('Relatório executivo de baterias'),
-  summary: {
-    overallStatus: 'OK',
-    totalDevices: 2,
-    healthyDevices: 2,
-    attentionDevices: 0,
-    criticalDevices: 0,
-    noDataDevices: 0,
-    totalAlerts: 0,
-    overallHealth: 100,
-  },
-  kpis: { totalSamples: 24, automationDevices: 1, sensingDevices: 1 },
-  conclusion: {
-    title: 'Frota saudável',
-    body: 'Todos os dispositivos analisáveis estão saudáveis.',
-    recommendations: ['Manter o monitoramento preventivo periódico.'],
-  },
-};
-
 describe('report variants as PDF', () => {
   let pdf: PdfService;
   let storage: ReportStorageService;
@@ -82,7 +45,8 @@ describe('report variants as PDF', () => {
   });
 
   it('gera um PDF executivo válido', async () => {
-    await pdf.generate('simple-smoke', renderSimpleReportHtml(simpleData));
+    const html = createReportService().render(document, undefined, 'simple');
+    await pdf.generate('simple-smoke', html);
 
     const bytes = await readFile(storage.finalPath('simple-smoke'));
     expect(bytes.subarray(0, 5).toString('ascii')).toBe('%PDF-');
@@ -104,7 +68,6 @@ function createReportService(): ReportDocumentService {
     new DeviceSelectionService(),
     new BatteryReportMapper(new BatteryAnalysisService()),
     new ReportViewModelBuilder(),
-    new ReportDataBuilder(),
     new ReportHtmlRenderer(),
   );
 }

@@ -4,7 +4,6 @@ import { BatteryAnalysisService } from '../../../src/battery/battery-analysis.se
 import { BatteryReportMapper } from '../../../src/battery/battery-report.mapper';
 import { DeviceSelectionService } from '../../../src/battery/device-selection.service';
 import { parseDatapoolPeriodDocument } from '../../../src/datapool/datapool.schema';
-import { ReportDataBuilder } from '../../../src/template/report-data.builder';
 import { ReportDocumentService } from '../../../src/template/report-document.service';
 import { ReportHtmlRenderer } from '../../../src/template/report-html.renderer';
 import { ReportViewModelBuilder } from '../../../src/template/report-view-model.builder';
@@ -29,27 +28,32 @@ function createService(): ReportDocumentService {
     new DeviceSelectionService(),
     new BatteryReportMapper(new BatteryAnalysisService()),
     new ReportViewModelBuilder(),
-    new ReportDataBuilder(),
     new ReportHtmlRenderer(),
   );
 }
 
 describe('ReportDocumentService', () => {
-  it('mantem a variante simples no modelo executivo', () => {
-    const html = createService().render(document, undefined, 'simple');
-
-    expect(html).toContain('Resumo executivo');
-    expect(html).not.toContain('class="hero"');
-    expect(html).not.toContain('id="device-data"');
-  });
-
-  it('usa o modelo antigo para a variante detalhada', () => {
-    const html = createService().render(document, undefined, 'detailed');
+  it('usa o modelo antigo com mapa unificado na variante simples', () => {
+    const service = createService();
+    const html = service.render(document, undefined, 'simple');
+    const detailedHtml = service.render(document, undefined, 'detailed');
 
     expect(html).toContain('class="hero"');
-    expect(html).toContain('class="heat-split"');
-    expect(html).toContain('id="device-data"');
-    expect(html).not.toContain('Telemetria diária');
+    expect(html).toContain('data-testid="heatmap-devices"');
+    expect(html).toContain('>Dispositivos</span>');
+    expect(html).not.toContain('data-testid="heatmap-automation"');
+    expect(html).not.toContain('data-testid="heatmap-sensors"');
+    expect(html).toContain('id="inventory-automation"');
+    expect(html).toContain('id="inventory-sensors"');
+    expect(withoutHeatmap(html)).toBe(withoutHeatmap(detailedHtml));
+  });
+
+  it('mantem o mapa separado na variante detalhada', () => {
+    const html = createService().render(document, undefined, 'detailed');
+
+    expect(html).toContain('data-testid="heatmap-automation"');
+    expect(html).toContain('data-testid="heatmap-sensors"');
+    expect(html).not.toContain('data-testid="heatmap-devices"');
   });
 
   it('integra os 42 dispositivos recebidos no modelo antigo', () => {
@@ -133,4 +137,11 @@ function extractDevices(html: string): Array<Record<string, unknown>> {
   )?.[1];
   if (!payload) throw new Error('device-data payload not found');
   return JSON.parse(payload) as Array<Record<string, unknown>>;
+}
+
+function withoutHeatmap(html: string): string {
+  return html.replace(
+    /<section class="heatmap-section">[\s\S]*?<\/section>/,
+    '<section class="heatmap-section"></section>',
+  );
 }

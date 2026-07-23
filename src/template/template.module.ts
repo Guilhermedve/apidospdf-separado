@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { BatteryModule } from '../battery/battery.module';
-import { ReportDataBuilder } from './report-data.builder';
 import { ReportDocumentService } from './report-document.service';
 import { ReportHtmlRenderer } from './report-html.renderer';
 import { ReportViewModelBuilder } from './report-view-model.builder';
@@ -9,13 +8,11 @@ import { ReportViewModelBuilder } from './report-view-model.builder';
   imports: [BatteryModule],
   providers: [
     ReportDocumentService,
-    ReportDataBuilder,
     ReportHtmlRenderer,
     ReportViewModelBuilder,
   ],
   exports: [
     ReportDocumentService,
-    ReportDataBuilder,
     ReportHtmlRenderer,
     ReportViewModelBuilder,
   ],
